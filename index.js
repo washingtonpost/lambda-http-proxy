@@ -41,13 +41,27 @@ functions.map_response = function(err, data, res) {
         winston.error(err);
         res.status(500).send(err);
     } else {
-        res.status(data.StatusCode);
-        res.json({
-            StatusCode: data.StatusCode,
-            FunctionError: data.FunctionError,
-            LogResult: data.LogResult,
-            Payload: !_.isNil(data.Payload) ? JSON.parse(data.Payload) : null
-        });
+        var payload = !_.isNil(data.Payload) ? JSON.parse(data.Payload) : null;
+        var statusCode = _.isEqual(data.StatusCode, 200) && !_.isNull(payload) ? payload.statusCode : data.StatusCode;
+        res.status(statusCode);
+        if (!_.isNil(payload) && !_.isNil(payload.headers) && !_.isEmpty(payload.headers)) {
+            res.set(payload.headers);
+        }
+        if (!_.isNil(payload) && !_.isNil(payload.cookies) && !_.isEmpty(payload.cookies)) {
+            _.forEach(payload.cookies, function(cookie) {
+               res.cookie(cookie.name, cookie.value, cookie.options);
+            });
+        }
+        if (!_.isNil(payload) && !_.isNil(payload.redirect)) {
+            res.redirect(statusCode, payload.redirect);
+        } else {
+            res.json({
+                StatusCode: statusCode,
+                FunctionError: data.FunctionError,
+                LogResult: data.LogResult,
+                Payload: !_.isNil(payload) && !_.isNil(payload.body) ? payload.body : null
+            });
+        }
     }
 };
 
@@ -64,8 +78,7 @@ functions.invoke = function (req, res, next) {
         return next();
     }
     var region = !_.isNil(req.header('x-Region')) ? req.header('x-Region') : 'us-east-1';
-    AWS.config.update({region:region});
-    var lambda = new AWS.Lambda();
+    var lambda = new AWS.Lambda({region:region});
     lambda.invoke(functions.map_request(req), function (err, data) {
         functions.map_response(err, data, res);
         return next();

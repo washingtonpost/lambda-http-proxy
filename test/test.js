@@ -61,7 +61,12 @@ describe('Test', function(){
                     StatusCode: 200,
                     FunctionError: 'error',
                     LogResult: 'logresult',
-                    Payload: JSON.stringify({foo: 'bar'})
+                    Payload: JSON.stringify({
+                        statusCode: 200,
+                        body: {
+                            foo: 'bar'
+                        }
+                    })
                 }
             })
             .expect(function (res) {
@@ -71,6 +76,94 @@ describe('Test', function(){
                 assert.equal(res.body.FunctionError, 'error');
                 assert.equal(res.body.LogResult, 'logresult');
                 assert.equal(res.body.Payload.foo, 'bar');
+            })
+            .end(done);
+    });
+    it('Test response mapping - 500', function(done){
+        request(app)
+            .post('/map-response')
+            .set('Accept', 'application/json')
+            .send({
+                data: {
+                    StatusCode: 500,
+                    FunctionError: 'error',
+                    LogResult: 'logresult',
+                    Payload: JSON.stringify({
+                        statusCode: 200,
+                        body: {
+                            foo: 'bar'
+                        }
+                    })
+                }
+            })
+            .expect(function (res) {
+                winston.info(JSON.stringify(res.body, null, 3));
+                assert.equal(res.statusCode, 500, 'statusCode should be 500, was:'+res.statusCode);
+                assert.equal(res.body.StatusCode, 500);
+                assert.equal(res.body.FunctionError, 'error');
+                assert.equal(res.body.LogResult, 'logresult');
+                assert.equal(res.body.Payload.foo, 'bar');
+            })
+            .end(done);
+    });
+    it('Test response mapping - 400', function(done){
+        request(app)
+            .post('/map-response')
+            .set('Accept', 'application/json')
+            .send({
+                data: {
+                    StatusCode: 200,
+                    FunctionError: 'error',
+                    LogResult: 'logresult',
+                    Payload: JSON.stringify({
+                        statusCode: 400,
+                        body: {
+                            foo: 'bar'
+                        }
+                    })
+                }
+            })
+            .expect(function (res) {
+                winston.info(JSON.stringify(res, null, 3));
+                assert.equal(res.status, 400, 'statusCode should be 400, was:'+res.status);
+            })
+            .end(done);
+    });
+    it('Test response mapping - headers, cookies', function(done){
+        request(app)
+            .post('/map-response')
+            .set('Accept', 'application/json')
+            .send({
+                data: {
+                    StatusCode: 200,
+                    FunctionError: 'error',
+                    LogResult: 'logresult',
+                    Payload: JSON.stringify({
+                        statusCode: 200,
+                        body: {
+                            foo: 'bar'
+                        },
+                        headers: {
+                            'header1': 'value1'
+                        },
+                        cookies: [
+                            {
+                                name: 'cookie1',
+                                value: 'value1',
+                                options: { maxAge: 900000, httpOnly: true }
+                            }
+                        ]
+                    })
+                }
+            })
+            .expect(function (res) {
+                winston.info(JSON.stringify(res.body, null, 3));
+                assert.equal(res.status, 200, 'statusCode should be 200, was:'+res.statusCode);
+                assert.equal(res.body.StatusCode, 200);
+                assert.equal(res.body.FunctionError, 'error');
+                assert.equal(res.body.LogResult, 'logresult');
+                assert.equal(res.body.Payload.foo, 'bar');
+                assert.equal(res.get('header1'), 'value1');
             })
             .end(done);
     });
