@@ -42,7 +42,10 @@ functions.map_response = function(err, data, res) {
         res.status(500).send(err);
     } else {
         var payload = !_.isNil(data.Payload) ? JSON.parse(data.Payload) : null;
-        var statusCode = _.isEqual(data.StatusCode, 200) && !_.isNull(payload) ? payload.statusCode : data.StatusCode;
+        var statusCode = _.isEqual(data.StatusCode, 200) && !_.isNull(payload) && !_.isNull(payload.statusCode) ? payload.statusCode : data.StatusCode;
+        if (!_.isNil(data.FunctionError)) {
+            statusCode = 500;
+        }
         res.status(statusCode);
         if (!_.isNil(payload) && !_.isNil(payload.headers) && !_.isEmpty(payload.headers)) {
             res.set(payload.headers);
@@ -55,11 +58,27 @@ functions.map_response = function(err, data, res) {
         if (!_.isNil(payload) && !_.isNil(payload.redirect)) {
             res.redirect(statusCode, payload.redirect);
         } else {
+            if (!_.isNil(payload) && !_.isNil(payload.body)) {
+                var payload_out = payload.body;
+            } else if (!_.isNil(payload)) {
+                var payload_out = payload;
+            } else {
+                var payload_out = null;
+            }
+            var log_result = data.LogResult;
+            if (!_.isNil(log_result)) {
+                try {
+                    var b = new Buffer(log_result, 'base64')
+                    log_result = b.toString();
+                } catch (err) {
+                    winston.error(err);
+                }
+            }
             res.json({
                 StatusCode: statusCode,
                 FunctionError: data.FunctionError,
-                LogResult: data.LogResult,
-                Payload: !_.isNil(payload) && !_.isNil(payload.body) ? payload.body : null
+                LogResult: log_result,
+                Payload: payload_out
             });
         }
     }
