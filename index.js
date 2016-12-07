@@ -91,17 +91,21 @@ functions.map_response = function(err, data, res) {
  * @param res
  * @param callback
  */
-functions.invoke = function (req, res, next) {
+functions.invoke = function(options) {
+  options = options || {};
+
+  return function invoke(req, res, next) {
     if (_.isNil(req.header('x-FunctionName'))) {
         res.status(400).send("Please provide an AWS Lambda function name in the form of a 'x-FunctionName' header.");
         return next();
     }
-    var region = !_.isNil(req.header('x-Region')) ? req.header('x-Region') : 'us-east-1';
-    var lambda = new AWS.Lambda({region:region});
+    options.region = !_.isNil(req.header('x-Region')) ? req.header('x-Region') : 'us-east-1';
+    var lambda = new AWS.Lambda(options);
     lambda.invoke(functions.map_request(req), function (err, data) {
         functions.map_response(err, data, res);
         return next();
     });
+  }
 };
 
 module.exports = functions;
