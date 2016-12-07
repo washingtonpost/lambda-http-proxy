@@ -25,13 +25,3 @@ The response structure looks like:
 ```
 
 This module requires express.js
-
-## Deploy New Version
-Update the version in package.json
-
-Get deployment credentials from pinned messages on #artifactory-users
-
-Execute the following command.
-```
-npm publish
-```

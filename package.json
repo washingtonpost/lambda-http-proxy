@@ -1,6 +1,6 @@
 {
   "name": "lambda-http-proxy",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Proxy http requests to lambda functions",
   "main": "index.js",
   "scripts": {
@@ -24,9 +24,6 @@
     "url": "https://github.com/washingtonpost/lambda-http-proxy/issues"
   },
   "homepage": "https://github.com/washingtonpost/lambda-http-proxy#readme",
-  "publishConfig": {
-    "registry": "https://washingtonpost.artifactoryonline.com/washingtonpost/api/npm/npm-local"
-  },
   "dependencies": {
     "aws-sdk": "^2.7.2",
     "lodash": "^4.17.2",
