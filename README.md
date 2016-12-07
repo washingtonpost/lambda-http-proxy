@@ -4,7 +4,7 @@ This module is used to standardize the http to lambda mapping and function invoc
 ## Usage
 ```
 var lambda_http_proxy = require('lambda_http_proxy');
-app.all('/api', lambda_http_proxy.invoke);
+app.all('/api', lambda_http_proxy.invoke());
 ```
 
 The following headers are supported/required:
