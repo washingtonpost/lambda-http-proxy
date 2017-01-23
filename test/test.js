@@ -59,7 +59,6 @@ describe('Test', function(){
             .send({
                 data: {
                     StatusCode: 200,
-                    FunctionError: 'error',
                     LogResult: 'logresult',
                     Payload: JSON.stringify({
                         statusCode: 200,
@@ -73,8 +72,6 @@ describe('Test', function(){
                 winston.info(JSON.stringify(res.body, null, 3));
                 assert.equal(res.statusCode, 200, 'statusCode should be 200, was:'+res.statusCode);
                 assert.equal(res.body.StatusCode, 200);
-                assert.equal(res.body.FunctionError, 'error');
-                assert.equal(res.body.LogResult, 'logresult');
                 assert.equal(res.body.Payload.foo, 'bar');
             })
             .end(done);
@@ -87,7 +84,6 @@ describe('Test', function(){
                 data: {
                     StatusCode: 500,
                     FunctionError: 'error',
-                    LogResult: 'logresult',
                     Payload: JSON.stringify({
                         statusCode: 200,
                         body: {
@@ -101,7 +97,6 @@ describe('Test', function(){
                 assert.equal(res.statusCode, 500, 'statusCode should be 500, was:'+res.statusCode);
                 assert.equal(res.body.StatusCode, 500);
                 assert.equal(res.body.FunctionError, 'error');
-                assert.equal(res.body.LogResult, 'logresult');
                 assert.equal(res.body.Payload.foo, 'bar');
             })
             .end(done);
@@ -113,8 +108,6 @@ describe('Test', function(){
             .send({
                 data: {
                     StatusCode: 200,
-                    FunctionError: 'error',
-                    LogResult: 'logresult',
                     Payload: JSON.stringify({
                         statusCode: 400,
                         body: {
@@ -136,7 +129,6 @@ describe('Test', function(){
             .send({
                 data: {
                     StatusCode: 200,
-                    FunctionError: 'error',
                     LogResult: 'logresult',
                     Payload: JSON.stringify({
                         statusCode: 200,
@@ -160,8 +152,6 @@ describe('Test', function(){
                 winston.info(JSON.stringify(res.body, null, 3));
                 assert.equal(res.status, 200, 'statusCode should be 200, was:'+res.statusCode);
                 assert.equal(res.body.StatusCode, 200);
-                assert.equal(res.body.FunctionError, 'error');
-                assert.equal(res.body.LogResult, 'logresult');
                 assert.equal(res.body.Payload.foo, 'bar');
                 assert.equal(res.get('header1'), 'value1');
             })

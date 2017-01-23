@@ -28,7 +28,7 @@ functions.map_request = function(req) {
             body : req.body,
             cookies : req.cookies,
             url : req.originalUrl,
-            path : req.path,
+            path : '/'+_.trim(req.path, '/'),
             protocol : req.protocol,
             query : req.query
         }),
