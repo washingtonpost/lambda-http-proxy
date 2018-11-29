@@ -36,35 +36,13 @@ functions.map_request = function(req) {
     };
 };
 
-functions.map_response = function(err, data, res) {
+functions.map_response_standard = function(err, data, res) {
     if (err) {
         winston.error(err);
         res.status(500).send(err);
     } else {
-        var payload = !_.isNil(data.Payload) ? JSON.parse(data.Payload) : null;
-        var statusCode = _.isEqual(data.StatusCode, 200) && !_.isNull(payload) && !_.isNull(payload.statusCode) ? payload.statusCode : data.StatusCode;
-        if (!_.isNil(data.FunctionError)) {
-            statusCode = 500;
-        }
-        res.status(statusCode);
-        if (!_.isNil(payload) && !_.isNil(payload.headers) && !_.isEmpty(payload.headers)) {
-            res.set(payload.headers);
-        }
-        if (!_.isNil(payload) && !_.isNil(payload.cookies) && !_.isEmpty(payload.cookies)) {
-            _.forEach(payload.cookies, function(cookie) {
-               res.cookie(cookie.name, cookie.value, cookie.options);
-            });
-        }
-        if (!_.isNil(payload) && !_.isNil(payload.redirect)) {
-            res.redirect(statusCode, payload.redirect);
-        } else {
-            if (!_.isNil(payload) && !_.isNil(payload.body)) {
-                var payload_out = payload.body;
-            } else if (!_.isNil(payload)) {
-                var payload_out = payload;
-            } else {
-                var payload_out = null;
-            }
+        var response = map_response_common(data, res)
+        if(!_.isNil(response.payload)) {
             var log_result = data.LogResult;
             if (!_.isNil(log_result)) {
                 try {
@@ -74,12 +52,25 @@ functions.map_response = function(err, data, res) {
                     winston.error(err);
                 }
             }
+
             res.json({
-                StatusCode: statusCode,
+                StatusCode: response.statusCode,
                 FunctionError: data.FunctionError,
                 LogResult: log_result,
-                Payload: payload_out
+                Payload: response.payload
             });
+        }
+    }
+};
+
+functions.map_response_simple = function(err, data, res) {
+    if (err) {
+        winston.error(err);
+        res.status(500).send(err);
+    } else {
+        var response = map_response_common(data, res)
+        if(!_.isNil(response.payload)) {
+            res.json(response.payload);
         }
     }
 };
@@ -92,20 +83,69 @@ functions.map_response = function(err, data, res) {
  * @param callback
  */
 functions.invoke = function(options) {
-  options = options || {};
+    options = options || {};
 
-  return function invoke(req, res, next) {
-    if (_.isNil(req.header('x-FunctionName'))) {
-        res.status(400).send("Please provide an AWS Lambda function name in the form of a 'x-FunctionName' header.");
-        return next();
+    return function invoke(req, res, next) {
+        if (_.isNil(req.header('x-FunctionName'))) {
+            res.status(400).send("Please provide an AWS Lambda function name in the form of a 'x-FunctionName' header.");
+            return next();
+        }
+
+        var viewtype = _.isNil(req.header('x-ViewType')) ? 'standard' : req.header('x-ViewType')
+
+        options.region = !_.isNil(req.header('x-Region')) ? req.header('x-Region') : 'us-east-1';
+        var lambda = new AWS.Lambda(options);
+        lambda.invoke(functions.map_request(req), function (err, data) {
+            switch(viewtype) {
+                case 'simple':
+                    functions.map_response_simple(err, data, res);
+                    break;
+                case 'standard':
+                default:
+                    functions.map_response_standard(err, data, res);
+            }
+
+            return next();
+        });
     }
-    options.region = !_.isNil(req.header('x-Region')) ? req.header('x-Region') : 'us-east-1';
-    var lambda = new AWS.Lambda(options);
-    lambda.invoke(functions.map_request(req), function (err, data) {
-        functions.map_response(err, data, res);
-        return next();
-    });
-  }
 };
+
+function map_response_common(data, res) {
+    var payload = !_.isNil(data.Payload) ? JSON.parse(data.Payload) : null;
+    var response = {}
+    response.statusCode = _.isEqual(data.StatusCode, 200) && !_.isNull(payload) && !_.isNull(payload.statusCode) ? payload.statusCode : data.StatusCode;
+
+    if (!_.isNil(data.FunctionError)) {
+        response.statusCode = 500;
+    }
+
+    res.status(response.statusCode);
+
+    if (!_.isNil(payload) && !_.isNil(payload.headers) && !_.isEmpty(payload.headers)) {
+        res.set(payload.headers);
+    }
+    if (!_.isNil(payload) && !_.isNil(payload.cookies) && !_.isEmpty(payload.cookies)) {
+        _.forEach(payload.cookies, function(cookie) {
+            res.cookie(cookie.name, cookie.value, cookie.options);
+        });
+    }
+
+    if (!_.isNil(payload) && !_.isNil(payload.redirect)) {
+        res.redirect(response.statusCode, payload.redirect);
+        return null
+    } else {
+        if (!_.isNil(payload) && !_.isNil(payload.body)) {
+            var payload_out = payload.body;
+        } else if (!_.isNil(payload)) {
+            var payload_out = payload;
+        } else {
+            var payload_out = null;
+        }
+
+        response.payload = payload_out
+    }
+
+    return response
+}
 
 module.exports = functions;

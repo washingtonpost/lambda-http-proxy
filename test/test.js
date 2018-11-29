@@ -26,6 +26,22 @@ describe('Test', function(){
             .set('x-FunctionName', 'not-found')
             .expect(500, done);
     });
+    it('invalid function name standard ViewType', function(done){
+        request(app)
+            .get('/api')
+            .set('Accept', 'application/json')
+            .set('x-FunctionName', 'not-found')
+            .set('x-ViewType', 'standard')
+            .expect(500, done);
+    });
+    it('invalid function name simple ViewType', function(done){
+        request(app)
+            .get('/api')
+            .set('Accept', 'application/json')
+            .set('x-FunctionName', 'not-found')
+            .set('x-ViewType', 'simple')
+            .expect(500, done);
+    });
     it('Test request mapping', function(done){
         request(app)
             .post('/map-request?param1=yes&param2=no')
@@ -52,9 +68,9 @@ describe('Test', function(){
             })
             .end(done);
     });
-    it('Test response mapping', function(done){
+    it('Test standard response mapping', function(done){
         request(app)
-            .post('/map-response')
+            .post('/map-response-standard')
             .set('Accept', 'application/json')
             .send({
                 data: {
@@ -76,9 +92,9 @@ describe('Test', function(){
             })
             .end(done);
     });
-    it('Test response mapping - 500', function(done){
+    it('Test standard response mapping - 500', function(done){
         request(app)
-            .post('/map-response')
+            .post('/map-response-standard')
             .set('Accept', 'application/json')
             .send({
                 data: {
@@ -101,9 +117,9 @@ describe('Test', function(){
             })
             .end(done);
     });
-    it('Test response mapping - 400', function(done){
+    it('Test standard response mapping - 400', function(done){
         request(app)
-            .post('/map-response')
+            .post('/map-response-standard')
             .set('Accept', 'application/json')
             .send({
                 data: {
@@ -122,9 +138,9 @@ describe('Test', function(){
             })
             .end(done);
     });
-    it('Test response mapping - headers, cookies', function(done){
+    it('Test standard response mapping - headers, cookies', function(done){
         request(app)
-            .post('/map-response')
+            .post('/map-response-standard')
             .set('Accept', 'application/json')
             .send({
                 data: {
@@ -153,6 +169,110 @@ describe('Test', function(){
                 assert.equal(res.status, 200, 'statusCode should be 200, was:'+res.statusCode);
                 assert.equal(res.body.StatusCode, 200);
                 assert.equal(res.body.Payload.foo, 'bar');
+                assert.equal(res.get('header1'), 'value1');
+            })
+            .end(done);
+    });
+    it('Test simple response mapping', function(done){
+        request(app)
+            .post('/map-response-simple')
+            .set('Accept', 'application/json')
+            .send({
+                data: {
+                    StatusCode: 200,
+                    LogResult: 'logresult',
+                    Payload: JSON.stringify({
+                        statusCode: 200,
+                        body: {
+                            foo: 'bar'
+                        }
+                    })
+                }
+            })
+            .expect(function (res) {
+                winston.info(JSON.stringify(res.body, null, 3));
+                assert.equal(res.statusCode, 200, 'statusCode should be 200, was:'+res.statusCode);
+                assert.equal(res.body.foo, 'bar');
+            })
+            .end(done);
+    });
+    it('Test simple response mapping - 500', function(done){
+        request(app)
+            .post('/map-response-simple')
+            .set('Accept', 'application/json')
+            .send({
+                data: {
+                    StatusCode: 500,
+                    FunctionError: 'error',
+                    Payload: JSON.stringify({
+                        statusCode: 200,
+                        body: {
+                            foo: 'bar'
+                        }
+                    })
+                }
+            })
+            .expect(function (res) {
+                winston.info(JSON.stringify(res.body, null, 3));
+                assert.equal(res.statusCode, 500, 'statusCode should be 500, was:'+res.statusCode);
+                assert.equal(res.body.StatusCode, null);
+                assert.equal(res.body.FunctionError, null);
+                assert.equal(res.body.foo, 'bar');
+            })
+            .end(done);
+    });
+    it('Test simple response mapping - 400', function(done){
+        request(app)
+            .post('/map-response-standard')
+            .set('Accept', 'application/json')
+            .send({
+                data: {
+                    StatusCode: 200,
+                    Payload: JSON.stringify({
+                        statusCode: 400,
+                        body: {
+                            foo: 'bar'
+                        }
+                    })
+                }
+            })
+            .expect(function (res) {
+                winston.info(JSON.stringify(res, null, 3));
+                assert.equal(res.status, 400, 'statusCode should be 400, was:'+res.status);
+            })
+            .end(done);
+    });
+    it('Test simple response mapping - headers, cookies', function(done){
+        request(app)
+            .post('/map-response-simple')
+            .set('Accept', 'application/json')
+            .send({
+                data: {
+                    StatusCode: 200,
+                    LogResult: 'logresult',
+                    Payload: JSON.stringify({
+                        statusCode: 200,
+                        body: {
+                            foo: 'bar'
+                        },
+                        headers: {
+                            'header1': 'value1'
+                        },
+                        cookies: [
+                            {
+                                name: 'cookie1',
+                                value: 'value1',
+                                options: { maxAge: 900000, httpOnly: true }
+                            }
+                        ]
+                    })
+                }
+            })
+            .expect(function (res) {
+                winston.info(JSON.stringify(res.body, null, 3));
+                assert.equal(res.status, 200, 'statusCode should be 200, was:'+res.statusCode);
+                assert.equal(res.body.StatusCode, null);
+                assert.equal(res.body.foo, 'bar');
                 assert.equal(res.get('header1'), 'value1');
             })
             .end(done);
