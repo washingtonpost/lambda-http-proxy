@@ -11,16 +11,24 @@ The following headers are supported/required:
 * x-FunctionName, Required, Lambda function name.
 * x-LogType, Optional, None or Tail.
 * x-Qualifier, Optional
+* x-ViewType, Optional, default or simple; defaults to default.
 
 See the Lambda function params here for more information:  http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Lambda.html#invoke-property
 
-The response structure looks like:
+The default response structure looks like:
 ```
 {
     StatusCode: data.StatusCode,
     FunctionError: data.FunctionError,
     LogResult: data.LogResult,
     Payload: !_.isNil(data.Payload) ? JSON.parse(data.Payload) : null
+}
+```
+
+The simple response structure looks like:
+```
+{
+    <contents of Payload.body>
 }
 ```
 
